@@ -1,5 +1,9 @@
 # GİB Portal Arşiv - GİB E-Arşiv Fatura İndirme Portalı
 
+<div align="center">
+  <img src="https://komarev.com/ghpvc/?username=talh4tr&repo=gib-earsiv-fatura-indirici&label=Ziyaretçi+Sayısı&color=blue&style=flat-square" alt="Ziyaretçi Sayacı">
+</div>
+
 GİB E-Arşiv Portalına bağlanarak belirlediğiniz tarih aralığındaki imzalı veya iptal edilmiş faturaları otomatik olarak çeken, Playwright entegrasyonu ile fatura düzenini bozmadan aslına uygun A4 PDF'e dönüştüren ve bunları organize bir ZIP paketi olarak sunan açık kaynaklı bir sistemdir.
 
 ## 🚀 Özellikler
