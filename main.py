@@ -122,6 +122,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+print("="*60)
+print(" GİB E-Arşiv Fatura İndirici - CORE SYSTEM ACTIVATED")
+print(" Developed by: Talha Muhammed Çiftci (@talh4tr)")
+print(" License: PolyForm Noncommercial 1.0.0")
+print(" WARNING: Commercial use, SaaS integration, or resale")
+print(" is STRICTLY PROHIBITED. All rights reserved.")
+print("="*60)
+
 # Global progress state
 progress_state = {"status": "Bekleniyor...", "percent": 0}
 

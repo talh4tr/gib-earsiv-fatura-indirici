@@ -54,3 +54,6 @@ E-Posta: talhamuhammedciftci@gmail.com
 
 📄 Lisans
 Bu proje [PolyForm Noncommercial 1.0.0](LICENSE) lisansı altında korunmaktadır. Kişisel ve eğitim amaçlı kullanım serbesttir; ancak TİCARİ AMAÇLA KULLANILMASI VE SATILMASI KESİNLİKLE YASAKTIR.
+
+### ⚠️ Yasal Uyarı ve DMCA (Telif Hakkı İhlali)
+Bu projenin kodları veya mimarisi izinsiz olarak ticari bir yapıya (ücretli panel, SaaS, entegrasyon hizmeti vb.) dahil edildiği takdirde, ihlali gerçekleştiren kurumun sunucu sağlayıcısına (Hosting/Cloud Provider) ve ilgili platformlara derhal **DMCA Yayından Kaldırma (Takedown)** ihtarnamesi çekilecektir. Emeğe saygı gösterin ve ticari işleriniz için kendi çözümlerinizi üretin.
