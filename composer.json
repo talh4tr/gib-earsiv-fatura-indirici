@@ -1,0 +1,15 @@
+{
+    "name": "talh4tr/doku-arsiv",
+    "description": "GİB E-Arşiv Portal üzerinden faturaları toplu indirme ve PDF'e dönüştürme aracı.",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Talha Muhammed Çiftci",
+            "email": "talhamuhammedciftci@gmail.com",
+            "homepage": "https://github.com/talh4tr"
+        }
+    ],
+    "require": {
+        "mlevent/fatura": "^0.3.3"
+    }
+}

@@ -1,0 +1,24 @@
+# Python Geçici Dosyaları
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Composer / PHP Bağımlılıkları
+vendor/
+composer.lock
+
+# Operasyonel ve Geçici Veriler
+logs/
+temp/
+mock_data/
+*.zip
+*.html
+*.pdf
+
+# IDE ve Sistem Dosyaları
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
