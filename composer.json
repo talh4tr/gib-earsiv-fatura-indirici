@@ -2,6 +2,7 @@
     "name": "talh4tr/doku-arsiv",
     "description": "GİB E-Arşiv Portal üzerinden faturaları toplu indirme ve PDF'e dönüştürme aracı.",
     "type": "project",
+    "license": "proprietary",
     "authors": [
         {
             "name": "Talha Muhammed Çiftci",

@@ -53,4 +53,4 @@ Telegram: @talh4ciftci
 E-Posta: talhamuhammedciftci@gmail.com
 
 📄 Lisans
-Bu proje MIT lisansı altında korunmaktadır. İstediğiniz gibi indirip, değiştirip kullanabilirsiniz.
+Bu proje [PolyForm Noncommercial 1.0.0](LICENSE) lisansı altında korunmaktadır. Kişisel ve eğitim amaçlı kullanım serbesttir; ancak TİCARİ AMAÇLA KULLANILMASI VE SATILMASI KESİNLİKLE YASAKTIR.
