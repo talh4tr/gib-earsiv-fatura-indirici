@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GİB Arşiv - GİB E-Arşiv Fatura İndirme Portalı</title>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --primary-glow: rgba(59, 130, 246, 0.35);
+            --accent: #f43f5e;
+            --accent-glow: rgba(244, 63, 94, 0.2);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --input-bg: #1e293b;
+            --input-border: #334155;
+            --input-focus: #475569;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.1) 0px, transparent 50%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            backdrop-filter: blur(16px);
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: -0.05em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="date"] {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+            background: #243249;
+        }
+
+        /* Test Mode custom styling */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed var(--input-border);
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .toggle-container:hover {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .toggle-label-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .toggle-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .toggle-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Checkbox switch style */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--input-border);
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #ffffff;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Date Quick buttons */
+        .quick-dates {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .btn-quick {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn-quick:hover {
+            color: var(--text-primary);
+            border-color: var(--input-focus);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .btn-quick.active {
+            color: #ffffff;
+            border-color: var(--primary);
+            background: var(--primary-glow);
+        }
+
+        /* Filter options */
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .filter-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.25s ease;
+        }
+
+        .filter-option:hover {
+            border-color: var(--input-focus);
+        }
+
+        .filter-option.active {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .filter-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .filter-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 10px 20px var(--primary-glow);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px var(--primary-glow);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-submit:disabled {
+            background: #334155;
+            color: #64748b;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top: 3px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            line-height: 1.4;
+            margin-top: 25px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .alert-error {
+            background: var(--accent-glow);
+            border: 1px solid var(--accent);
+            color: #fda4af;
+        }
+
+        .alert-success {
+            background: var(--success-glow);
+            border: 1px solid var(--success);
+            color: #a7f3d0;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="header">
+            <div class="logo">GİB Arşiv</div>
+            <div class="subtitle">E-Arşiv Portal Fatura PDF Çekici</div>
+        </div>
+
+        <form id="downloadForm">
+            <!-- Test Modu Toggle -->
+            <div class="toggle-container" id="testModeToggle">
+                <div class="toggle-label-group">
+                    <span class="toggle-title">GİB Test Modu</span>
+                    <span class="toggle-desc">Sistemi test hesaplarıyla denemek için aktifleştirin</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="testMode" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <!-- Credentials Section -->
+            <div id="credentialsSection">
+                <div class="form-group">
+                    <label for="username" id="usernameLabel">Kullanıcı Kodu (Test hesabınız yoksa boş bırakabilirsiniz)</label>
+                    <input type="text" id="username" placeholder="GİB portal kullanıcı kodunuz">
+                </div>
+
+                <div class="form-group">
+                    <label for="password" id="passwordLabel">Parola</label>
+                    <input type="password" id="password" placeholder="••••••••">
+                </div>
+            </div>
+
+            <!-- Date Range Section -->
+            <div class="form-group">
+                <label>Sorgulama Tarih Aralığı</label>
+                <!-- Quick Date select buttons -->
+                <div class="quick-dates">
+                    <button type="button" class="btn-quick" id="btnToday">Bugün</button>
+                    <button type="button" class="btn-quick" id="btnWeek">Bu Hafta</button>
+                    <button type="button" class="btn-quick active" id="btnMonth">Bu Ay</button>
+                    <button type="button" class="btn-quick" id="btnLastMonth">Geçen Ay</button>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <input type="date" id="startDate" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="date" id="endDate" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Section -->
+            <label>İndirilecek Fatura Tipleri</label>
+            <div class="filter-group">
+                <div class="filter-option active" id="optSigned">
+                    <input type="checkbox" id="filterSigned" checked>
+                    <span class="filter-label">İmzalılar</span>
+                </div>
+                <div class="filter-option" id="optDeleted">
+                    <input type="checkbox" id="filterDeleted">
+                    <span class="filter-label">İptaller</span>
+                </div>
+            </div>
+
+            <!-- Submit button -->
+            <button type="submit" class="btn-submit" id="btnSubmit">
+                <span class="spinner" id="btnSpinner"></span>
+                <span id="btnText">Faturaları İndir (ZIP)</span>
+            </button>
+        </form>
+
+        <!-- Progress Bar -->
+        <div id="progressContainer" style="display: none; margin-top: 25px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; animation: fadeIn 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem; font-weight: 500;">
+                <span id="progressStatus" style="color: var(--text-secondary);">Bekleniyor...</span>
+                <span id="progressPercent" style="color: var(--primary); font-weight: 600;">0%</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden;">
+                <div id="progressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), #60a5fa); border-radius: 4px; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="alert alert-error" id="alertError"></div>
+        <div class="alert alert-success" id="alertSuccess"></div>
+
+        <div style="text-align: center; margin-top: 25px; font-size: 0.8rem; color: var(--text-secondary);">
+            Developed by <a href="https://github.com/talh4tr" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;">@talh4tr</a>
+        </div>
+    </div>
+</div>
+
+<!-- Modal structure for failed downloads -->
+<div id="failedInvoicesModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: var(--card-bg); border: 1px solid var(--accent); border-radius: 20px; max-width: 500px; width: 100%; padding: 30px; box-shadow: 0 25px 50px -12px rgba(244, 63, 94, 0.25); display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px; color: var(--accent);">
+            <svg style="width: 28px; height: 28px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <h3 id="modalTitle" style="font-size: 1.25rem; font-weight: 700; color: #fda4af;">DİKKAT: X adet fatura indirilemedi!</h3>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">Aşağıdaki faturalar indirilirken portal üzerinde hata oluştu. Diğer faturalar başarıyla ZIP içerisine eklendi.</p>
+        <div id="modalList" style="max-height: 200px; overflow-y: auto; background: rgba(0, 0, 0, 0.25); border-radius: 10px; padding: 12px; border: 1px solid var(--card-border); font-size: 0.85rem; display: flex; flex-direction: column; gap: 8px;">
+            <!-- list items go here -->
+        </div>
+        <button type="button" id="modalCloseBtn" class="btn-submit" style="background: linear-gradient(135deg, var(--primary), var(--primary-hover)); box-shadow: 0 4px 12px var(--primary-glow); margin-top: 10px;">
+            Tamam, Kapat
+        </button>
+    </div>
+</div>
+
+<script>
+    console.log("%c GİB Portal Arşiv Core initialized. Developed by @talh4tr ", "background: #1e293b; color: #3b82f6; padding: 5px; border-radius: 4px;");
+
+    // Elements
+    const form = document.getElementById('downloadForm');
+    const testModeCheckbox = document.getElementById('testMode');
+    const testModeToggle = document.getElementById('testModeToggle');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const usernameLabel = document.getElementById('usernameLabel');
+    const passwordLabel = document.getElementById('passwordLabel');
+    
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    
+    const filterSigned = document.getElementById('filterSigned');
+    const filterDeleted = document.getElementById('filterDeleted');
+    const optSigned = document.getElementById('optSigned');
+    const optDeleted = document.getElementById('optDeleted');
+    
+    const btnSubmit = document.getElementById('btnSubmit');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const btnText = document.getElementById('btnText');
+    
+    const alertError = document.getElementById('alertError');
+    const alertSuccess = document.getElementById('alertSuccess');
+
+    // Progress Bar Elements
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressStatus = document.getElementById('progressStatus');
+    const progressPercent = document.getElementById('progressPercent');
+    let progressInterval = null;
+
+    // Date Quick select buttons
+    const btnToday = document.getElementById('btnToday');
+    const btnWeek = document.getElementById('btnWeek');
+    const btnMonth = document.getElementById('btnMonth');
+    const btnLastMonth = document.getElementById('btnLastMonth');
+    const quickButtons = [btnToday, btnWeek, btnMonth, btnLastMonth];
+
+    // Helper functions for date operations
+    const formatDateForInput = (date) => {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    };
+
+    const formatDateForAPI = (dateStr) => {
+        // Input: YYYY-MM-DD, Output: DD/MM/YYYY
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    };
+
+    const setQuickDatesActive = (activeBtn) => {
+        quickButtons.forEach(btn => btn.classList.remove('active'));
+        if (activeBtn) activeBtn.classList.add('active');
+    };
+
+    // Date calculations
+    const setDateRange = (start, end) => {
+        startDateInput.value = formatDateForInput(start);
+        endDateInput.value = formatDateForInput(end);
+    };
+
+    // Event Listeners for Quick Dates
+    btnToday.addEventListener('click', () => {
+        const today = new Date();
+        setDateRange(today, today);
+        setQuickDatesActive(btnToday);
+    });
+
+    btnWeek.addEventListener('click', () => {
+        const today = new Date();
+        const firstDayOfWeek = new Date(today);
+        // Set to Monday of this week
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        firstDayOfWeek.setDate(diff);
+        setDateRange(firstDayOfWeek, today);
+        setQuickDatesActive(btnWeek);
+    });
+
+    btnMonth.addEventListener('click', () => {
+        const today = new Date();
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        setDateRange(firstDayOfMonth, today);
+        setQuickDatesActive(btnMonth);
+    });
+
+    btnLastMonth.addEventListener('click', () => {
+        const today = new Date();
+        const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        setDateRange(firstDayOfLastMonth, lastDayOfLastMonth);
+        setQuickDatesActive(btnLastMonth);
+    });
+
+    // Default Date Selection (This Month)
+    btnMonth.click();
+
+    // Toggle container click helper
+    testModeToggle.addEventListener('click', (e) => {
+        if (e.target !== testModeCheckbox) {
+            testModeCheckbox.checked = !testModeCheckbox.checked;
+            testModeCheckbox.dispatchEvent(new Event('change'));
+        }
+    });
+
+    // Test mode adjustments
+    testModeCheckbox.addEventListener('change', () => {
+        if (testModeCheckbox.checked) {
+            usernameLabel.innerText = "Kullanıcı Kodu (Test hesabınız yoksa boş bırakabilirsiniz)";
+            usernameInput.placeholder = "GİB portal kullanıcı kodunuz";
+            usernameInput.required = false;
+            passwordInput.required = false;
+        } else {
+            usernameLabel.innerText = "GİB Kullanıcı Kodu / VKN *";
+            usernameInput.placeholder = "GİB portal kullanıcı kodunuz";
+            usernameInput.required = true;
+            passwordInput.required = true;
+        }
+    });
+    // Trigger initial change
+    testModeCheckbox.dispatchEvent(new Event('change'));
+
+    // Filter selectors styling toggles
+    optSigned.addEventListener('click', (e) => {
+        if (e.target !== filterSigned) {
+            filterSigned.checked = !filterSigned.checked;
+        }
+        updateFilterStyles();
+    });
+    optDeleted.addEventListener('click', (e) => {
+        if (e.target !== filterDeleted) {
+            filterDeleted.checked = !filterDeleted.checked;
+        }
+        updateFilterStyles();
+    });
+    filterSigned.addEventListener('change', updateFilterStyles);
+    filterDeleted.addEventListener('change', updateFilterStyles);
+
+    function updateFilterStyles() {
+        if (filterSigned.checked) optSigned.classList.add('active');
+        else optSigned.classList.remove('active');
+        
+        if (filterDeleted.checked) optDeleted.classList.add('active');
+        else optDeleted.classList.remove('active');
+    }
+
+    // Form Submit
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Hide alerts
+        alertError.style.display = 'none';
+        alertSuccess.style.display = 'none';
+
+        // Check filters
+        if (!filterSigned.checked && !filterDeleted.checked) {
+            showError("En az bir fatura tipi seçmelisiniz (İmzalılar veya İptaller).");
+            return;
+        }
+
+        // Determine filterType parameter
+        let filterType = 'both';
+        if (filterSigned.checked && !filterDeleted.checked) filterType = 'signed';
+        if (!filterSigned.checked && filterDeleted.checked) filterType = 'deleted';
+
+        // Prepare request payload
+        const payload = {
+            username: usernameInput.value.trim(),
+            password: passwordInput.value,
+            startDate: formatDateForAPI(startDateInput.value),
+            endDate: formatDateForAPI(endDateInput.value),
+            testMode: testModeCheckbox.checked,
+            filterType: filterType
+        };
+
+        // If testMode is true and username is empty, let the backend handle test credentials automatically
+
+        // Show spinner / Disable button
+        setLoading(true);
+
+        if (progressInterval) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+        }
+
+        // Reset and display progress bar
+        let maxPercent = 0;
+        progressBar.style.width = "0%";
+        progressPercent.innerText = "0%";
+        progressStatus.innerText = "Bekleniyor...";
+        progressContainer.style.display = 'block';
+
+        // Start polling interval
+        progressInterval = setInterval(async () => {
+            try {
+                const res = await fetch('/api/progress');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.percent >= maxPercent) {
+                        maxPercent = data.percent;
+                        progressBar.style.width = `${data.percent}%`;
+                        progressPercent.innerText = `${data.percent}%`;
+                        progressStatus.innerText = data.status;
+                    }
+                }
+            } catch (err) {
+                console.error("Progress polling error:", err);
+            }
+        }, 1000);
+
+        try {
+            const response = await fetch('/api/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const failedInvoicesHeader = response.headers.get('X-Failed-Invoices');
+                
+                // Get ZIP blob
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                
+                // Create anchor and download
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `gib_portal_faturalar_${payload.startDate.replaceAll('/', '-')}_${payload.endDate.replaceAll('/', '-')}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+                
+                if (failedInvoicesHeader) {
+                    try {
+                        const failedInvoices = JSON.parse(decodeURIComponent(failedInvoicesHeader));
+                        if (failedInvoices && failedInvoices.length > 0) {
+                            showFailedInvoicesModal(failedInvoices);
+                            showSuccess(`Faturalar indirildi. DİKKAT: ${failedInvoices.length} adet fatura indirilemedi!`);
+                            return;
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse failed invoices:", e);
+                    }
+                }
+                
+                showSuccess("Faturalar başarıyla PDF'e dönüştürüldü ve ZIP olarak indirildi!");
+            } else {
+                // Try parsing JSON error
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    const errData = await response.json();
+                    showError(errData.detail || "Faturalar çekilirken bir hata oluştu.");
+                } else {
+                    const text = await response.text();
+                    showError(text || "Fatura çekme talebi başarısız oldu.");
+                }
+            }
+        } catch (err) {
+            showError("Sunucu ile iletişim kurulurken bir hata oluştu: " + err.message);
+        } finally {
+            setLoading(false);
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            progressContainer.style.display = 'none';
+        }
+    });
+
+    function setLoading(isLoading) {
+        if (isLoading) {
+            btnSubmit.disabled = true;
+            btnSpinner.style.display = 'block';
+            btnText.innerText = "Faturalar Hazırlanıyor...";
+        } else {
+            btnSubmit.disabled = false;
+            btnSpinner.style.display = 'none';
+            btnText.innerText = "Faturaları İndir (ZIP)";
+        }
+    }
+
+    function showError(message) {
+        alertError.innerText = message;
+        alertError.style.display = 'block';
+        alertError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function showSuccess(message) {
+        alertSuccess.innerText = message;
+        alertSuccess.style.display = 'block';
+        alertSuccess.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function showFailedInvoicesModal(failedInvoices) {
+        const modal = document.getElementById('failedInvoicesModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalList = document.getElementById('modalList');
+        const closeBtn = document.getElementById('modalCloseBtn');
+        
+        modalTitle.innerText = `DİKKAT: ${failedInvoices.length} adet fatura indirilemedi!`;
+        modalList.innerHTML = '';
+        
+        failedInvoices.forEach(item => {
+            const div = document.createElement('div');
+            div.style.padding = '8px';
+            div.style.borderBottom = '1px solid rgba(255, 255, 255, 0.05)';
+            div.style.display = 'flex';
+            div.style.flexDirection = 'column';
+            div.style.gap = '2px';
+            
+            const belgeNo = item.belgeNumarasi || 'Bilinmeyen Belge No';
+            const uuid = item.uuid || 'Bilinmeyen UUID';
+            const msg = item.message || 'Bilinmeyen Hata';
+            
+            const headerDiv = document.createElement('div');
+            headerDiv.style.display = 'flex';
+            headerDiv.style.justifyContent = 'space-between';
+            
+            const belgeSpan = document.createElement('span');
+            belgeSpan.style.color = '#fda4af';
+            belgeSpan.style.fontWeight = '600';
+            belgeSpan.textContent = `Belge No: ${belgeNo}`;
+            headerDiv.appendChild(belgeSpan);
+            
+            const uuidSpan = document.createElement('span');
+            uuidSpan.style.color = 'var(--text-secondary)';
+            uuidSpan.style.fontSize = '0.75rem';
+            uuidSpan.textContent = `UUID: ${uuid}`;
+            
+            const errorSpan = document.createElement('span');
+            errorSpan.style.color = '#fca5a5';
+            errorSpan.style.fontSize = '0.8rem';
+            errorSpan.style.fontStyle = 'italic';
+            errorSpan.textContent = `Hata: ${msg}`;
+            
+            div.appendChild(headerDiv);
+            div.appendChild(uuidSpan);
+            div.appendChild(errorSpan);
+            
+            modalList.appendChild(div);
+        });
+        
+        modal.style.display = 'flex';
+        
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
+</script>
+</body>
+</html>
