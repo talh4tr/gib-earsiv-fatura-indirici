@@ -15,6 +15,7 @@ temp/
 mock_data/
 *.zip
 *.html
+!index.html
 *.pdf
 
 # IDE ve Sistem Dosyaları
