@@ -1,4 +1,4 @@
-# Doku Arşiv - GİB E-Arşiv Fatura İndirme Portalı
+# GİB Portal Arşiv - GİB E-Arşiv Fatura İndirme Portalı
 
 GİB E-Arşiv Portalına bağlanarak belirlediğiniz tarih aralığındaki imzalı veya iptal edilmiş faturaları otomatik olarak çeken, Playwright entegrasyonu ile fatura düzenini bozmadan aslına uygun A4 PDF'e dönüştüren ve bunları organize bir ZIP paketi olarak sunan açık kaynaklı bir sistemdir.
 
