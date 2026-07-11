@@ -38,24 +38,48 @@ PDF_RENDER_CONCURRENCY = 4
 
 # Setup logging formatter and logger
 logger = logging.getLogger("gib_arsiv")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 class CustomFormatter(logging.Formatter):
     def format(self, record):
         fatura_no = getattr(record, 'fatura_no', 'Sistem')
         asctime = self.formatTime(record, self.datefmt)
-        return f"[{asctime}] - Hata: [{fatura_no}] - [{record.getMessage()}]"
+        level_str = "Hata" if record.levelno >= logging.ERROR else "Bilgi"
+        return f"[{asctime}] - {level_str}: [{fatura_no}] - [{record.getMessage()}]"
 
 # Clean up handlers if already defined
 logger.handlers = []
+
+# File handler
 file_handler = logging.FileHandler(log_file_path, encoding="utf-8")
-file_handler.setLevel(logging.ERROR)
+file_handler.setLevel(logging.INFO)
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
 formatter = CustomFormatter(datefmt="%Y-%m-%d %H:%M:%S")
 file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
 logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 def log_error(fatura_no: str, message: str):
     logger.error(message, extra={"fatura_no": fatura_no})
+
+def log_info(fatura_no: str, message: str):
+    logger.info(message, extra={"fatura_no": fatura_no})
+
+def mask_sensitive_data(message: str, password: str = "") -> str:
+    if not message:
+        return message
+    if password and len(password) >= 3:
+        message = message.replace(password, "***MASKELENDI***")
+    # Mask patterns like (sifre|password|parola|sifre2) : or = value
+    pattern = re.compile(r'(sifre|password|parola|sifre2)["\']?\s*[:=]\s*["\']?[^"\'\s,}]+', re.IGNORECASE)
+    message = pattern.sub(r'\1=***MASKELENDI***', message)
+    return message
 
 def cleanup_stale_temp_dirs(max_age_hours: int = 6):
     """TEMP_ROOT altında max_age_hours'tan eski tüm klasörleri sil."""
@@ -69,9 +93,9 @@ def cleanup_stale_temp_dirs(max_age_hours: int = 6):
                 age_hours = (now - os.path.getmtime(path)) / 3600
                 if age_hours > max_age_hours:
                     shutil.rmtree(path)
-                    print(f"[GIB Arşiv] Yetim temp klasör temizlendi: {path} (yaş: {age_hours:.1f} saat)")
+                    log_info("Sistem", f"Yetim temp klasör temizlendi: {path} (yaş: {age_hours:.1f} saat)")
         except Exception as e:
-            print(f"[GIB Arşiv] Temp klasör temizlenirken hata ({path}): {e}")
+            log_error("Sistem", f"Temp klasör temizlenirken hata ({path}): {e}")
 
 async def periodic_cleanup_loop():
     """Her saat başı eski temp klasörlerini temizle."""
@@ -99,7 +123,7 @@ async def lifespan(app: FastAPI):
     browser = await pw.chromium.launch(headless=True)
     app.state.playwright = pw
     app.state.browser = browser
-    print("[GIB Arşiv] Playwright Chromium başlatıldı (tek instance).")
+    log_info("Sistem", "Playwright Chromium başlatıldı (tek instance).")
 
     yield
 
@@ -114,7 +138,7 @@ async def lifespan(app: FastAPI):
     # Playwright browser kapat
     await browser.close()
     await pw.stop()
-    print("[GIB Arşiv] Playwright Chromium kapatıldı.")
+    log_info("Sistem", "Playwright Chromium kapatıldı.")
 
 # Setup FastAPI App
 app = FastAPI(
@@ -227,8 +251,7 @@ async def convert_html_to_pdf(html_content: str, pdf_path: str, browser, fatura_
         )
         return True
     except Exception as e:
-        print(f"Playwright PDF dönüştürme hatası: {e}")
-        log_error(fatura_no, f"PDF render hatası: {str(e)}")
+        log_error(fatura_no, f"PDF render hatası (Playwright): {str(e)}")
         return False
     finally:
         # Context'i kapat (page de otomatik kapanır) — browser'ı KAPATMA
@@ -241,15 +264,15 @@ async def convert_html_to_pdf(html_content: str, pdf_path: str, browser, fatura_
             try:
                 os.remove(temp_html_path)
             except Exception as e:
-                print(f"Geçici HTML silinemedi: {e}")
+                log_error(fatura_no, f"Geçici HTML silinemedi: {e}")
 
 def cleanup_temp_dir(temp_dir: str):
     try:
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
-            print(f"Geçici dizin temizlendi: {temp_dir}")
+            log_info("Sistem", f"Geçici dizin temizlendi: {temp_dir}")
     except Exception as e:
-        print(f"Geçici dizin temizlenirken hata oluştu: {e}")
+        log_error("Sistem", f"Geçici dizin temizlenirken hata oluştu: {e}")
 
 @app.post("/api/download")
 async def download_invoices(req: DownloadRequest, request: Request, background_tasks: BackgroundTasks):
@@ -341,7 +364,7 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
             proc.kill()
             await proc.wait()
             cleanup_temp_dir(temp_dir)
-            log_error("Sistem", "GİB PHP helper zaman aşımına uğradı.")
+            log_error("Sistem", "GİB PHP helper zaman aşımına uğradı (120 saniye sınırını aştı).")
             raise HTTPException(status_code=504, detail="GİB portalından yanıt alınamadı (zaman aşımı).")
         
         stdout = stdout_bytes.decode("utf-8", errors="replace")
@@ -349,30 +372,28 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
         
         # Check process exit code
         if proc.returncode != 0:
-            err_msg = stdout or stderr or "Bilinmeyen PHP hatası"
-            try:
-                err_json = json.loads(err_msg)
-                err_msg = err_json.get("error", err_msg)
-            except:
-                pass
+            stdout_masked = mask_sensitive_data(stdout, req.password)
+            stderr_masked = mask_sensitive_data(stderr, req.password)
+            log_error("Sistem", f"PHP helper çalıştırılamadı veya hata verdi (Exit Code: {proc.returncode}). Stderr: {stderr_masked} | Stdout: {stdout_masked}")
             cleanup_temp_dir(temp_dir)
-            log_error("Sistem", f"GİB Portal Hatası: {err_msg}")
-            raise HTTPException(status_code=400, detail=f"GİB Portal Hatası: {err_msg}")
+            raise HTTPException(status_code=400, detail="GİB Portal işlemi başarısız oldu. Lütfen bilgilerinizi kontrol edin.")
             
         # Parse output
         try:
             res = json.loads(stdout)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as jde:
+            stdout_masked = mask_sensitive_data(stdout, req.password)
+            log_error("Sistem", f"PHP helper çıktısı JSON olarak ayrıştırılamadı (JSONDecodeError: {str(jde)}). Ham çıktı: {stdout_masked[:1000]}")
             cleanup_temp_dir(temp_dir)
-            log_error("Sistem", f"PHP çıktısı JSON olarak ayrıştırılamadı. Ham çıktı: {stdout[:500]}")
             raise HTTPException(
                 status_code=502,
-                detail="GİB portalından beklenmeyen bir yanıt alındı. Lütfen daha sonra tekrar deneyin."
+                detail="GİB portalından geçersiz yanıt alındı."
             )
         if "error" in res:
+            err_msg_masked = mask_sensitive_data(res['error'], req.password)
+            log_error("Sistem", f"GİB Portal Entegrasyon Hatası: {err_msg_masked}")
             cleanup_temp_dir(temp_dir)
-            log_error("Sistem", f"GİB Portal Hatası: {res['error']}")
-            raise HTTPException(status_code=400, detail=f"GİB Portal Hatası: {res['error']}")
+            raise HTTPException(status_code=400, detail=f"GİB Portal Hatası: {err_msg_masked}")
             
         downloaded_zips = res.get("downloaded", [])
         failed_invoices = res.get("failed", [])
@@ -455,8 +476,7 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
                     "uuid": item.get("uuid", "Bilinmiyor"),
                     "message": f"Fatura zip dosyası açılamadı: {str(e)}"
                 })
-                print(f"Fatura zip açma hatası ({belge_no}): {e}")
-                log_error(belge_no, f"Fatura zip açma hatası: {str(e)}")
+                log_error(belge_no, f"Fatura zip açma hatası (ZipFile): {str(e)}")
                 continue
                 
             if not html_content:
@@ -594,8 +614,9 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
         raise
     except Exception as e:
         cleanup_temp_dir(temp_dir)
-        log_error("Sistem", f"Sistem Hatası: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Sistem Hatası: {str(e)}")
+        err_msg_masked = mask_sensitive_data(str(e), req.password)
+        log_error("Sistem", f"Beklenmeyen Sistem Hatası: {err_msg_masked}")
+        raise HTTPException(status_code=500, detail="Sunucuda beklenmeyen bir hata oluştu.")
     finally:
         asyncio.create_task(cleanup_progress(request_id, 30))
 

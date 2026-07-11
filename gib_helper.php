@@ -203,7 +203,8 @@ class CustomGib extends Gib
                 break;
             } else {
                 $truncatedResponse = is_string($response) ? substr($response, 0, 300) : 'FALSE';
-                error_log("[GIB Arşiv Debug] Try status '{$candidate}' failed for UUID {$uuid}. HTTP Status: {$statusLine}. Body: {$truncatedResponse}");
+                $maskedResponse = maskSensitiveData($truncatedResponse, $password);
+                error_log("[GIB Arşiv Debug] Try status '{$candidate}' failed for UUID {$uuid}. HTTP Status: {$statusLine}. Body: {$maskedResponse}");
                 
                 $errors[$candidate] = [
                     'status' => $statusLine,
