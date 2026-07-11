@@ -431,8 +431,8 @@
             </div>
 
             <!-- Filter Section -->
-            <label>İndirilecek Fatura Tipleri</label>
-            <div class="filter-group">
+            <label id="filterSectionLabel">İndirilecek Fatura Tipleri</label>
+            <div class="filter-group" id="filterGroup">
                 <div class="filter-option active" id="optSigned">
                     <input type="checkbox" id="filterSigned" checked>
                     <span class="filter-label">İmzalılar</span>
@@ -628,6 +628,24 @@
     // Trigger initial change
     testModeCheckbox.dispatchEvent(new Event('change'));
 
+    // Direction change filter visibility control
+    const directionSelect = document.getElementById('direction');
+    const filterSectionLabel = document.getElementById('filterSectionLabel');
+    const filterGroup = document.getElementById('filterGroup');
+
+    function updateFiltersVisibility() {
+        if (directionSelect.value === 'incoming') {
+            filterSectionLabel.style.display = 'none';
+            filterGroup.style.display = 'none';
+        } else {
+            filterSectionLabel.style.display = 'block';
+            filterGroup.style.display = 'flex';
+        }
+    }
+
+    directionSelect.addEventListener('change', updateFiltersVisibility);
+    updateFiltersVisibility();
+
     // Filter selectors styling toggles
     optSigned.addEventListener('click', (e) => {
         if (e.target !== filterSigned) {
@@ -670,17 +688,19 @@
         alertError.style.display = 'none';
         alertSuccess.style.display = 'none';
 
-        // Check filters
-        if (!filterSigned.checked && !filterDeleted.checked && !filterObjected.checked) {
-            showError("En az bir fatura tipi seçmelisiniz (İmzalılar, İptaller veya İtiraz Edilenler).");
-            return;
-        }
+        const direction = document.getElementById('direction').value;
 
         // Determine filterType parameter
         const selectedFilterTypes = [];
         if (filterSigned.checked) selectedFilterTypes.push('signed');
         if (filterDeleted.checked) selectedFilterTypes.push('deleted');
         if (filterObjected.checked) selectedFilterTypes.push('objected');
+
+        // Check filters only if direction is outgoing
+        if (direction === 'outgoing' && selectedFilterTypes.length === 0) {
+            showError("En az bir fatura tipi seçmelisiniz (İmzalılar, İptaller veya İtiraz Edilenler).");
+            return;
+        }
 
         let filterType = selectedFilterTypes.join(',');
         if (selectedFilterTypes.length === 2 && filterSigned.checked && filterDeleted.checked && !filterObjected.checked) {
@@ -695,7 +715,8 @@
             endDate: formatDateForAPI(endDateInput.value),
             testMode: testModeCheckbox.checked,
             filterType: filterType,
-            direction: document.getElementById('direction').value
+            filterTypes: selectedFilterTypes,
+            direction: direction
         };
 
         // If testMode is true and username is empty, let the backend handle test credentials automatically

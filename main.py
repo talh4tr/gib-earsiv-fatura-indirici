@@ -18,7 +18,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 
@@ -143,8 +143,17 @@ class DownloadRequest(BaseModel):
     startDate: str  # Format: DD/MM/YYYY
     endDate: str    # Format: DD/MM/YYYY
     testMode: bool
-    filterType: str  # 'signed', 'deleted', 'both'
+    filterType: Optional[str] = None
+    filterTypes: Optional[List[str]] = None
     direction: Optional[str] = "outgoing"  # 'outgoing' or 'incoming'
+
+def validate_filters(filters: Optional[List[str]]) -> None:
+    if not filters:
+        return
+    allowed = {"signed", "deleted", "objected"}
+    for f in filters:
+        if f not in allowed:
+            raise ValueError("Invalid filter value provided.")
 
 async def convert_html_to_pdf(html_content: str, pdf_path: str, browser, fatura_no: str = "Bilinmiyor", is_cancelled: bool = False):
     # GİB'in orijinal CSS'ine müdahale etme — sadece karakter kodlaması için meta tag ekle
@@ -238,6 +247,36 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
     # Create unique temp directories for process isolation
     temp_dir = tempfile.mkdtemp(dir=TEMP_ROOT)
     
+    # Prepare params based on direction and filters
+    php_filter_type = req.filterType
+    php_filter_types = req.filterTypes
+
+    if req.direction == "incoming":
+        php_filter_type = None
+        php_filter_types = None
+    elif req.direction == "outgoing":
+        if php_filter_types is not None:
+            try:
+                validate_filters(php_filter_types)
+            except ValueError as ve:
+                raise HTTPException(status_code=400, detail=str(ve))
+            if php_filter_type is None:
+                php_filter_type = ",".join(php_filter_types)
+        elif php_filter_type is not None:
+            # Validate legacy filterType string to ensure 400 is returned on invalid values
+            if php_filter_type == "both":
+                legacy_list = ["signed", "deleted"]
+            elif php_filter_type == "all":
+                legacy_list = ["signed", "deleted", "objected"]
+            else:
+                legacy_list = [t.strip() for t in re.split(r'[,|]', php_filter_type) if t.strip()]
+            try:
+                validate_filters(legacy_list)
+            except ValueError as ve:
+                raise HTTPException(status_code=400, detail=str(ve))
+        else:
+            raise HTTPException(status_code=400, detail="Filtre tipi belirtilmelidir.")
+        
     # Prepare params for PHP helper
     php_params = {
         "username": req.username,
@@ -245,7 +284,8 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
         "startDate": req.startDate,
         "endDate": req.endDate,
         "testMode": req.testMode,
-        "filterType": req.filterType,
+        "filterType": php_filter_type,
+        "filterTypes": php_filter_types,
         "direction": req.direction,
         "outputDir": temp_dir
     }

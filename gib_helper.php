@@ -257,6 +257,7 @@ $password = $params['password'] ?? '';
 $startDate = $params['startDate'] ?? '';
 $endDate = $params['endDate'] ?? '';
 $testMode = (bool)($params['testMode'] ?? false);
+$filterTypes = $params['filterTypes'] ?? null;
 $filterType = $params['filterType'] ?? 'both'; // signed, deleted, objected, both, all or comma-separated values
 $direction = $params['direction'] ?? 'outgoing'; // outgoing, incoming
 $outputDir = $params['outputDir'] ?? '';
@@ -390,7 +391,7 @@ try {
         $totalFound = count($invoices);
         $downloadFunc($gib, $invoices, 'signed', $outputDir, $downloaded, $failed);
     } else {
-        $selectedFilterTypes = resolveSelectedFilterTypes($filterType);
+        $selectedFilterTypes = resolveSelectedFilterTypes($filterTypes !== null ? $filterTypes : $filterType);
         if (empty($selectedFilterTypes)) {
             echo json_encode(['error' => 'Geçersiz fatura tipi seçimi.']);
             exit(1);
