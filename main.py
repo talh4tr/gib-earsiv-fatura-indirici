@@ -13,6 +13,7 @@ import zipfile
 import asyncio
 import urllib.parse
 import logging
+from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.responses import FileResponse, HTMLResponse
@@ -239,10 +240,19 @@ def cleanup_temp_dir(temp_dir: str):
 @app.post("/api/download")
 async def download_invoices(req: DownloadRequest, request: Request, background_tasks: BackgroundTasks):
     global progress_state
-    # Validate date formats roughly (DD/MM/YYYY)
+    # Validate date formats and calendar validity (DD/MM/YYYY)
     date_regex = re.compile(r'^\d{2}/\d{2}/\d{4}$')
-    if not date_regex.match(req.startDate) or not date_regex.match(req.endDate):
+    if not req.startDate or not req.endDate or not date_regex.match(req.startDate) or not date_regex.match(req.endDate):
         raise HTTPException(status_code=400, detail="Tarihler DD/MM/YYYY formatında olmalıdır.")
+        
+    try:
+        start_dt = datetime.strptime(req.startDate, "%d/%m/%Y")
+        end_dt = datetime.strptime(req.endDate, "%d/%m/%Y")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Geçersiz bir tarih girdiniz.")
+        
+    if start_dt > end_dt:
+        raise HTTPException(status_code=400, detail="Başlangıç tarihi bitiş tarihinden sonra olamaz.")
         
     # Create unique temp directories for process isolation
     temp_dir = tempfile.mkdtemp(dir=TEMP_ROOT)
