@@ -707,6 +707,9 @@
             filterType = 'both'; // Backward-compatible alias for signed + deleted.
         }
 
+        // Generate a unique request ID for progress tracking
+        const requestId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36);
+
         // Prepare request payload
         const payload = {
             username: usernameInput.value.trim(),
@@ -716,7 +719,8 @@
             testMode: testModeCheckbox.checked,
             filterType: filterType,
             filterTypes: selectedFilterTypes,
-            direction: direction
+            direction: direction,
+            requestId: requestId
         };
 
         // If testMode is true and username is empty, let the backend handle test credentials automatically
@@ -739,7 +743,7 @@
         // Start polling interval
         progressInterval = setInterval(async () => {
             try {
-                const res = await fetch('/api/progress');
+                const res = await fetch(`/api/progress/${requestId}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.percent >= maxPercent) {

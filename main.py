@@ -131,12 +131,25 @@ print(" WARNING: Commercial use, SaaS integration, or resale")
 print(" is STRICTLY PROHIBITED. All rights reserved.")
 print("="*60)
 
-# Global progress state
-progress_state = {"status": "Bekleniyor...", "percent": 0}
+# Progress store for request-based progress tracking
+progress_store = {}
+
+async def cleanup_progress(request_id: str, delay_seconds: int = 30):
+    await asyncio.sleep(delay_seconds)
+    try:
+        if request_id in progress_store:
+            del progress_store[request_id]
+    except Exception:
+        pass
 
 @app.get("/api/progress")
 def get_progress():
-    return progress_state
+    # Backward compatibility: return the legacy progress or first available progress
+    return progress_store.get('legacy', {"status": "Bekleniyor...", "percent": 0})
+
+@app.get("/api/progress/{requestId}")
+def get_progress_by_id(requestId: str):
+    return progress_store.get(requestId, {"status": "Bekleniyor...", "percent": 0})
 
 class DownloadRequest(BaseModel):
     username: str
@@ -147,6 +160,7 @@ class DownloadRequest(BaseModel):
     filterType: Optional[str] = None
     filterTypes: Optional[List[str]] = None
     direction: Optional[str] = "outgoing"  # 'outgoing' or 'incoming'
+    requestId: Optional[str] = None
 
 def validate_filters(filters: Optional[List[str]]) -> None:
     if not filters:
@@ -239,7 +253,8 @@ def cleanup_temp_dir(temp_dir: str):
 
 @app.post("/api/download")
 async def download_invoices(req: DownloadRequest, request: Request, background_tasks: BackgroundTasks):
-    global progress_state
+    request_id = req.requestId or 'legacy'
+    progress_store[request_id] = {"status": "Başlatılıyor...", "percent": 0}
     # Validate date formats and calendar validity (DD/MM/YYYY)
     date_regex = re.compile(r'^\d{2}/\d{2}/\d{4}$')
     if not req.startDate or not req.endDate or not date_regex.match(req.startDate) or not date_regex.match(req.endDate):
@@ -308,7 +323,7 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
         raise HTTPException(status_code=500, detail="GİB yardımcı entegrasyon dosyası (gib_helper.php) bulunamadı.")
         
     try:
-        progress_state = {"status": "GİB'den faturalar çekiliyor...", "percent": 10}
+        progress_store[request_id] = {"status": "GİB'den faturalar çekiliyor...", "percent": 10}
         failed_invoices = []
         # Run php helper (asenkron — event loop bloklanmaz)
         proc = await asyncio.create_subprocess_exec(
@@ -508,18 +523,17 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
             
             rendered_count += 1
             percent = 10 + int(80 * (rendered_count / total_to_render)) if total_to_render > 0 else 90
-            progress_state["status"] = f"PDF'ler oluşturuluyor ({rendered_count}/{total_to_render})..."
-            progress_state["percent"] = percent
+            progress_store[request_id] = {"status": f"PDF'ler oluşturuluyor ({rendered_count}/{total_to_render})...", "percent": percent}
             
             return (task, success)
         
         if total_to_render > 0:
-            progress_state = {"status": f"PDF'ler oluşturuluyor (0/{total_to_render})...", "percent": 10}
+            progress_store[request_id] = {"status": f"PDF'ler oluşturuluyor (0/{total_to_render})...", "percent": 10}
             render_results = await asyncio.gather(*[render_one(t) for t in render_queue])
         else:
             render_results = []
             
-        progress_state = {"status": "ZIP dosyası hazırlanıyor...", "percent": 95}
+        progress_store[request_id] = {"status": "ZIP dosyası hazırlanıyor...", "percent": 95}
         
         # Phase C - Sequential ZIP writing
         with zipfile.ZipFile(master_zip_path, 'w') as master_zip:
@@ -583,7 +597,7 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
         log_error("Sistem", f"Sistem Hatası: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Sistem Hatası: {str(e)}")
     finally:
-        progress_state = {"status": "Bekleniyor...", "percent": 0}
+        asyncio.create_task(cleanup_progress(request_id, 30))
 
 # Serve Frontend static and index.html
 @app.get("/")
