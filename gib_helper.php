@@ -143,6 +143,11 @@ class CustomGib extends Gib
             $candidates[] = 'İptal';
             $candidates[] = 'İptal Edildi';
             $candidates[] = 'Silinmis';
+        } elseif (str_contains(strtolower($onayDurumu), 'itiraz') || str_contains($onayDurumu, 'İtiraz')) {
+            $candidates[] = 'Onaylandı';
+            $candidates[] = 'İtiraz Edildi';
+            $candidates[] = 'İtiraz';
+            $candidates[] = 'Onaylanmadı';
         } else {
             $candidates[] = 'Onaylanmadı';
         }
@@ -202,6 +207,12 @@ class CustomGib extends Gib
             return $fullDir;
         }
         return false;
+    }
+
+    public function onlyObjected(): self
+    {
+        $this->setFilters(['onayDurumu' => 'İtiraz']);
+        return $this;
     }
 }
 
@@ -266,8 +277,8 @@ try {
             }
             
             try {
-                // Determine the correct onayDurumu based on the invoice type (signed/deleted)
-                $onayDurumu = ($type === 'deleted') ? 'Silinmiş' : 'Onaylandı';
+                // Determine the correct onayDurumu based on the invoice type (signed/deleted/objected)
+                $onayDurumu = ($type === 'deleted') ? 'Silinmiş' : (($type === 'objected') ? 'İtiraz Edildi' : 'Onaylandı');
                 // Save ZIP file using ETTN (UUID) as filename
                 $zipPath = $gib->saveToDiskCustom($uuid, $outputDir, $uuid, $onayDurumu);
                 if ($zipPath) {
@@ -275,7 +286,7 @@ try {
                         'uuid' => $uuid,
                         'belgeNumarasi' => $num,
                         'belgeTarihi' => $date,
-                        'type' => $type, // 'signed' or 'deleted'
+                        'type' => $type, // 'signed', 'deleted', or 'objected'
                         'zipPath' => $zipPath
                     ];
                 } else {
@@ -317,6 +328,23 @@ try {
         $invoices = dedupInvoicesByUuid($invoices);
         $totalFound = count($invoices);
         $downloadFunc($gib, $invoices, 'signed', $outputDir, $downloaded, $failed);
+    } elseif ($filterType === 'objected') {
+        $invoices = [];
+        foreach ($dateChunks as $chunk) {
+            $rangeLabel = "{$chunk['baslangic']} - {$chunk['bitis']}";
+            $gib->onlyObjected();
+            $chunkInvoices = $gib->getAll($chunk['baslangic'], $chunk['bitis']);
+
+            $warning = checkSuspiciousLimit(count($chunkInvoices), $rangeLabel);
+            if ($warning !== null) {
+                $suspiciousWarnings[] = $warning;
+            }
+
+            $invoices = array_merge($invoices, $chunkInvoices);
+        }
+        $invoices = dedupInvoicesByUuid($invoices);
+        $totalFound = count($invoices);
+        $downloadFunc($gib, $invoices, 'objected', $outputDir, $downloaded, $failed);
     } elseif ($filterType === 'signed') {
         $invoices = [];
         foreach ($dateChunks as $chunk) {

@@ -427,9 +427,11 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
             except Exception as e:
                 log_error(belge_no, f"HTML parse hatası: {str(e)}")
                 
-            # Folder structure in master ZIP: 'Gelen_Faturalar' or ('Imzali'/'Iptal')
+            # Folder structure in master ZIP: 'Gelen_Faturalar', 'Itiraz_Edilen_Faturalar' or ('Imzali'/'Iptal')
             if req.direction == "incoming":
                 sub_folder = "Gelen_Faturalar"
+            elif status_type == "objected":
+                sub_folder = "Itiraz_Edilen_Faturalar"
             else:
                 sub_folder = "Imzali" if status_type == "signed" else "Iptal"
             temp_pdf_path = os.path.join(temp_dir, f"{belge_no}.pdf")

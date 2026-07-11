@@ -441,6 +441,10 @@
                     <input type="checkbox" id="filterDeleted">
                     <span class="filter-label">İptaller</span>
                 </div>
+                <div class="filter-option" id="optObjected">
+                    <input type="checkbox" id="filterObjected">
+                    <span class="filter-label">İtiraz Edilenler</span>
+                </div>
             </div>
 
             <!-- Submit button -->
@@ -505,8 +509,10 @@
     
     const filterSigned = document.getElementById('filterSigned');
     const filterDeleted = document.getElementById('filterDeleted');
+    const filterObjected = document.getElementById('filterObjected');
     const optSigned = document.getElementById('optSigned');
     const optDeleted = document.getElementById('optDeleted');
+    const optObjected = document.getElementById('optObjected');
     
     const btnSubmit = document.getElementById('btnSubmit');
     const btnSpinner = document.getElementById('btnSpinner');
@@ -635,8 +641,15 @@
         }
         updateFilterStyles();
     });
+    optObjected.addEventListener('click', (e) => {
+        if (e.target !== filterObjected) {
+            filterObjected.checked = !filterObjected.checked;
+        }
+        updateFilterStyles();
+    });
     filterSigned.addEventListener('change', updateFilterStyles);
     filterDeleted.addEventListener('change', updateFilterStyles);
+    filterObjected.addEventListener('change', updateFilterStyles);
 
     function updateFilterStyles() {
         if (filterSigned.checked) optSigned.classList.add('active');
@@ -644,6 +657,9 @@
         
         if (filterDeleted.checked) optDeleted.classList.add('active');
         else optDeleted.classList.remove('active');
+        
+        if (filterObjected.checked) optObjected.classList.add('active');
+        else optObjected.classList.remove('active');
     }
 
     // Form Submit
@@ -655,15 +671,16 @@
         alertSuccess.style.display = 'none';
 
         // Check filters
-        if (!filterSigned.checked && !filterDeleted.checked) {
-            showError("En az bir fatura tipi seçmelisiniz (İmzalılar veya İptaller).");
+        if (!filterSigned.checked && !filterDeleted.checked && !filterObjected.checked) {
+            showError("En az bir fatura tipi seçmelisiniz (İmzalılar, İptaller veya İtiraz Edilenler).");
             return;
         }
 
         // Determine filterType parameter
         let filterType = 'both';
-        if (filterSigned.checked && !filterDeleted.checked) filterType = 'signed';
-        if (!filterSigned.checked && filterDeleted.checked) filterType = 'deleted';
+        if (filterSigned.checked && !filterDeleted.checked && !filterObjected.checked) filterType = 'signed';
+        else if (!filterSigned.checked && filterDeleted.checked && !filterObjected.checked) filterType = 'deleted';
+        else if (!filterSigned.checked && !filterDeleted.checked && filterObjected.checked) filterType = 'objected';
 
         // Prepare request payload
         const payload = {
