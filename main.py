@@ -144,6 +144,7 @@ class DownloadRequest(BaseModel):
     endDate: str    # Format: DD/MM/YYYY
     testMode: bool
     filterType: str  # 'signed', 'deleted', 'both'
+    direction: Optional[str] = "outgoing"  # 'outgoing' or 'incoming'
 
 async def convert_html_to_pdf(html_content: str, pdf_path: str, browser, fatura_no: str = "Bilinmiyor", is_cancelled: bool = False):
     # GİB'in orijinal CSS'ine müdahale etme — sadece karakter kodlaması için meta tag ekle
@@ -245,6 +246,7 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
         "endDate": req.endDate,
         "testMode": req.testMode,
         "filterType": req.filterType,
+        "direction": req.direction,
         "outputDir": temp_dir
     }
     
@@ -425,8 +427,11 @@ async def download_invoices(req: DownloadRequest, request: Request, background_t
             except Exception as e:
                 log_error(belge_no, f"HTML parse hatası: {str(e)}")
                 
-            # Folder structure in master ZIP: 'Imzali' or 'Iptal'
-            sub_folder = "Imzali" if status_type == "signed" else "Iptal"
+            # Folder structure in master ZIP: 'Gelen_Faturalar' or ('Imzali'/'Iptal')
+            if req.direction == "incoming":
+                sub_folder = "Gelen_Faturalar"
+            else:
+                sub_folder = "Imzali" if status_type == "signed" else "Iptal"
             temp_pdf_path = os.path.join(temp_dir, f"{belge_no}.pdf")
             is_cancelled = (sub_folder == "Iptal")
             

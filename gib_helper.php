@@ -220,6 +220,7 @@ $startDate = $params['startDate'] ?? '';
 $endDate = $params['endDate'] ?? '';
 $testMode = (bool)($params['testMode'] ?? false);
 $filterType = $params['filterType'] ?? 'both'; // signed, deleted, both
+$direction = $params['direction'] ?? 'outgoing'; // outgoing, incoming
 $outputDir = $params['outputDir'] ?? '';
 
 if (empty($startDate) || empty($endDate) || empty($outputDir)) {
@@ -300,7 +301,23 @@ try {
     $dateChunks = splitDateRangeWeekly($startDate, $endDate);
     $suspiciousWarnings = [];
 
-    if ($filterType === 'signed') {
+    if ($direction === 'incoming') {
+        $invoices = [];
+        foreach ($dateChunks as $chunk) {
+            $rangeLabel = "{$chunk['baslangic']} - {$chunk['bitis']}";
+            $chunkInvoices = $gib->getAllIssuedToMe($chunk['baslangic'], $chunk['bitis']);
+
+            $warning = checkSuspiciousLimit(count($chunkInvoices), $rangeLabel);
+            if ($warning !== null) {
+                $suspiciousWarnings[] = $warning;
+            }
+
+            $invoices = array_merge($invoices, $chunkInvoices);
+        }
+        $invoices = dedupInvoicesByUuid($invoices);
+        $totalFound = count($invoices);
+        $downloadFunc($gib, $invoices, 'signed', $outputDir, $downloaded, $failed);
+    } elseif ($filterType === 'signed') {
         $invoices = [];
         foreach ($dateChunks as $chunk) {
             $rangeLabel = "{$chunk['baslangic']} - {$chunk['bitis']}";
