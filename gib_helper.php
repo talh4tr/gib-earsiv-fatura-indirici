@@ -87,6 +87,33 @@ function checkSuspiciousLimit(int $count, string $rangeLabel): ?string
     return null;
 }
 
+function resolveSelectedFilterTypes(string|array $filterType): array
+{
+    if (is_array($filterType)) {
+        $requested = $filterType;
+    } else {
+        $requested = match ($filterType) {
+            'signed' => ['signed'],
+            'deleted' => ['deleted'],
+            'objected' => ['objected'],
+            'both' => ['signed', 'deleted'],
+            'all' => ['signed', 'deleted', 'objected'],
+            default => preg_split('/[,|]/', $filterType) ?: [],
+        };
+    }
+
+    $allowed = ['signed', 'deleted', 'objected'];
+    $selected = [];
+    foreach ($requested as $type) {
+        $type = trim((string)$type);
+        if (in_array($type, $allowed, true) && !in_array($type, $selected, true)) {
+            $selected[] = $type;
+        }
+    }
+
+    return $selected;
+}
+
 // Global exception/error handler — try-catch'in yakalayamadığı fatal error'ları
 // (Throwable ama Exception olmayanlar dahil) burada yakala.
 set_exception_handler(function ($e) {
@@ -230,7 +257,7 @@ $password = $params['password'] ?? '';
 $startDate = $params['startDate'] ?? '';
 $endDate = $params['endDate'] ?? '';
 $testMode = (bool)($params['testMode'] ?? false);
-$filterType = $params['filterType'] ?? 'both'; // signed, deleted, both
+$filterType = $params['filterType'] ?? 'both'; // signed, deleted, objected, both, all or comma-separated values
 $direction = $params['direction'] ?? 'outgoing'; // outgoing, incoming
 $outputDir = $params['outputDir'] ?? '';
 
@@ -312,6 +339,40 @@ try {
     $dateChunks = splitDateRangeWeekly($startDate, $endDate);
     $suspiciousWarnings = [];
 
+    $queryAndDownload = function(string $type) use ($gib, $dateChunks, $downloadFunc, $outputDir, &$downloaded, &$failed, &$suspiciousWarnings): int {
+        $invoices = [];
+        $labelByType = [
+            'signed' => 'Imzali',
+            'deleted' => 'Iptal',
+            'objected' => 'Itiraz',
+        ];
+
+        foreach ($dateChunks as $chunk) {
+            $rangeLabel = "{$chunk['baslangic']} - {$chunk['bitis']} ({$labelByType[$type]})";
+            if ($type === 'signed') {
+                $gib->onlySigned();
+            } elseif ($type === 'deleted') {
+                $gib->onlyDeleted();
+            } elseif ($type === 'objected') {
+                $gib->onlyObjected();
+            }
+
+            $chunkInvoices = $gib->getAll($chunk['baslangic'], $chunk['bitis']);
+
+            $warning = checkSuspiciousLimit(count($chunkInvoices), $rangeLabel);
+            if ($warning !== null) {
+                $suspiciousWarnings[] = $warning;
+            }
+
+            $invoices = array_merge($invoices, $chunkInvoices);
+        }
+
+        $invoices = dedupInvoicesByUuid($invoices);
+        $downloadFunc($gib, $invoices, $type, $outputDir, $downloaded, $failed);
+
+        return count($invoices);
+    };
+
     if ($direction === 'incoming') {
         $invoices = [];
         foreach ($dateChunks as $chunk) {
@@ -328,93 +389,16 @@ try {
         $invoices = dedupInvoicesByUuid($invoices);
         $totalFound = count($invoices);
         $downloadFunc($gib, $invoices, 'signed', $outputDir, $downloaded, $failed);
-    } elseif ($filterType === 'objected') {
-        $invoices = [];
-        foreach ($dateChunks as $chunk) {
-            $rangeLabel = "{$chunk['baslangic']} - {$chunk['bitis']}";
-            $gib->onlyObjected();
-            $chunkInvoices = $gib->getAll($chunk['baslangic'], $chunk['bitis']);
-
-            $warning = checkSuspiciousLimit(count($chunkInvoices), $rangeLabel);
-            if ($warning !== null) {
-                $suspiciousWarnings[] = $warning;
-            }
-
-            $invoices = array_merge($invoices, $chunkInvoices);
-        }
-        $invoices = dedupInvoicesByUuid($invoices);
-        $totalFound = count($invoices);
-        $downloadFunc($gib, $invoices, 'objected', $outputDir, $downloaded, $failed);
-    } elseif ($filterType === 'signed') {
-        $invoices = [];
-        foreach ($dateChunks as $chunk) {
-            $rangeLabel = "{$chunk['baslangic']} - {$chunk['bitis']}";
-            $gib->onlySigned();
-            $chunkInvoices = $gib->getAll($chunk['baslangic'], $chunk['bitis']);
-
-            $warning = checkSuspiciousLimit(count($chunkInvoices), $rangeLabel);
-            if ($warning !== null) {
-                $suspiciousWarnings[] = $warning;
-            }
-
-            $invoices = array_merge($invoices, $chunkInvoices);
-        }
-        $invoices = dedupInvoicesByUuid($invoices);
-        $totalFound = count($invoices);
-        $downloadFunc($gib, $invoices, 'signed', $outputDir, $downloaded, $failed);
-    } elseif ($filterType === 'deleted') {
-        $invoices = [];
-        foreach ($dateChunks as $chunk) {
-            $rangeLabel = "{$chunk['baslangic']} - {$chunk['bitis']}";
-            $gib->onlyDeleted();
-            $chunkInvoices = $gib->getAll($chunk['baslangic'], $chunk['bitis']);
-
-            $warning = checkSuspiciousLimit(count($chunkInvoices), $rangeLabel);
-            if ($warning !== null) {
-                $suspiciousWarnings[] = $warning;
-            }
-
-            $invoices = array_merge($invoices, $chunkInvoices);
-        }
-        $invoices = dedupInvoicesByUuid($invoices);
-        $totalFound = count($invoices);
-        $downloadFunc($gib, $invoices, 'deleted', $outputDir, $downloaded, $failed);
     } else {
-        // Both - query signed
-        $signedInvoices = [];
-        foreach ($dateChunks as $chunk) {
-            $rangeLabel = "{$chunk['baslangic']} - {$chunk['bitis']} (Imzali)";
-            $gib->onlySigned();
-            $chunkInvoices = $gib->getAll($chunk['baslangic'], $chunk['bitis']);
-
-            $warning = checkSuspiciousLimit(count($chunkInvoices), $rangeLabel);
-            if ($warning !== null) {
-                $suspiciousWarnings[] = $warning;
-            }
-
-            $signedInvoices = array_merge($signedInvoices, $chunkInvoices);
+        $selectedFilterTypes = resolveSelectedFilterTypes($filterType);
+        if (empty($selectedFilterTypes)) {
+            echo json_encode(['error' => 'Geçersiz fatura tipi seçimi.']);
+            exit(1);
         }
-        $signedInvoices = dedupInvoicesByUuid($signedInvoices);
-        $downloadFunc($gib, $signedInvoices, 'signed', $outputDir, $downloaded, $failed);
 
-        // Both - query deleted
-        $deletedInvoices = [];
-        foreach ($dateChunks as $chunk) {
-            $rangeLabel = "{$chunk['baslangic']} - {$chunk['bitis']} (Iptal)";
-            $gib->onlyDeleted();
-            $chunkInvoices = $gib->getAll($chunk['baslangic'], $chunk['bitis']);
-
-            $warning = checkSuspiciousLimit(count($chunkInvoices), $rangeLabel);
-            if ($warning !== null) {
-                $suspiciousWarnings[] = $warning;
-            }
-
-            $deletedInvoices = array_merge($deletedInvoices, $chunkInvoices);
+        foreach ($selectedFilterTypes as $selectedType) {
+            $totalFound += $queryAndDownload($selectedType);
         }
-        $deletedInvoices = dedupInvoicesByUuid($deletedInvoices);
-        $downloadFunc($gib, $deletedInvoices, 'deleted', $outputDir, $downloaded, $failed);
-
-        $totalFound = count($signedInvoices) + count($deletedInvoices);
     }
 
     echo json_encode([

@@ -677,10 +677,15 @@
         }
 
         // Determine filterType parameter
-        let filterType = 'both';
-        if (filterSigned.checked && !filterDeleted.checked && !filterObjected.checked) filterType = 'signed';
-        else if (!filterSigned.checked && filterDeleted.checked && !filterObjected.checked) filterType = 'deleted';
-        else if (!filterSigned.checked && !filterDeleted.checked && filterObjected.checked) filterType = 'objected';
+        const selectedFilterTypes = [];
+        if (filterSigned.checked) selectedFilterTypes.push('signed');
+        if (filterDeleted.checked) selectedFilterTypes.push('deleted');
+        if (filterObjected.checked) selectedFilterTypes.push('objected');
+
+        let filterType = selectedFilterTypes.join(',');
+        if (selectedFilterTypes.length === 2 && filterSigned.checked && filterDeleted.checked && !filterObjected.checked) {
+            filterType = 'both'; // Backward-compatible alias for signed + deleted.
+        }
 
         // Prepare request payload
         const payload = {
